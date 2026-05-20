@@ -1,18 +1,17 @@
-from binance.client import Client
 import requests
 
 SYMBOL = "ETHUSDT"
-INTERVAL = Client.KLINE_INTERVAL_15MINUTE
+INTERVAL = "15m"
 TELEGRAM_TOKEN = "8857597899:AAGALX8vOUNl_sNQyOazFdjrPHBJ8QAzQDs"
 CHAT_ID = "1152105552"
-
-client = Client()
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
-klines = client.get_klines(symbol=SYMBOL, interval=INTERVAL, limit=7)
+url = f"https://api.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7"
+response = requests.get(url)
+klines = response.json()
 
 closed = klines[:-1]
 last_5 = closed[-5:]
@@ -29,4 +28,3 @@ if red == 5 and before_was_green:
     send_telegram("🔴 ETH 15m: завершились 5 красных свечей подряд!")
     print("Уведомление отправлено")
 else:
-    print(f"Красных свечей: {red}")
