@@ -28,3 +28,4 @@ if red == 5 and before_was_green:
     send_telegram("🔴 ETH 15m: завершились 5 красных свечей подряд!")
     print("Уведомление отправлено")
 else:
+    print(f"Красных свечей: {red}")
