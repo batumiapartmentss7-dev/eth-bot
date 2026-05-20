@@ -9,9 +9,27 @@ def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
-url = f"https://api.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7"
-response = requests.get(url)
-klines = response.json()
+# Пробуем разные серверы Binance
+urls = [
+    f"https://api.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7",
+    f"https://api1.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7",
+    f"https://api2.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7",
+]
+
+klines = None
+for url in urls:
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        if isinstance(data, list):
+            klines = data
+            break
+    except Exception as e:
+        print(f"Ошибка: {e}")
+
+if klines is None:
+    print("Не удалось получить данные с Binance")
+    exit()
 
 closed = klines[:-1]
 last_5 = closed[-5:]
