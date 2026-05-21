@@ -8,22 +8,27 @@ def send_telegram(text):
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
 def check_symbol(symbol):
-    url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval=15&limit=7"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-    
-    try:
-        response = requests.get(url, timeout=10, headers=headers)
-        data = response.json()
-        klines = data["result"]["list"]
-    except Exception as e:
-        print(f"Ошибка {symbol}: {e}")
-        send_telegram(f"❌ {symbol}: не удалось получить данные с Bybit")
+    urls = [
+        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
+        f"https://api1.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
+        f"https://api2.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
+    ]
+
+    klines = None
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if isinstance(data, list):
+                klines = data
+                break
+        except Exception as e:
+            print(f"Ошибка: {e}")
+
+    if klines is None:
+        send_telegram(f"❌ {symbol}: не удалось получить данные с Binance")
         return
 
-    klines = list(reversed(klines))
     closed = klines[:-1]
     last_5 = closed[-5:]
 
@@ -35,10 +40,3 @@ def check_symbol(symbol):
         info.append(color)
 
     candles_str = " ".join(info)
-    print(f"{symbol}: {candles_str} | Все красные: {all_red}")
-
-    if all_red:
-        send_telegram(f"🚨 {symbol} 15m: 5 красных свечей подряд!\n{candles_str}\nВремя входить в Лонг!")
-
-check_symbol("BTCUSDT")
-check_symbol("ETHUSDT")
