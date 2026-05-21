@@ -1,4 +1,4 @@
-name: Bybit Bot
+name: Binance Bot
 on:
   schedule:
     - cron: '*/15 * * * *'
