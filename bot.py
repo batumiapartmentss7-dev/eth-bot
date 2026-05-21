@@ -9,7 +9,6 @@ def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
-# Пробуем разные серверы Binance
 urls = [
     f"https://api.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7",
     f"https://api1.binance.com/api/v3/klines?symbol={SYMBOL}&interval={INTERVAL}&limit=7",
@@ -33,17 +32,13 @@ if klines is None:
 
 closed = klines[:-1]
 last_5 = closed[-5:]
-candle_before = closed[-6]
 
 red = 0
 for k in last_5:
     if float(k[4]) < float(k[1]):
         red += 1
 
-before_was_green = float(candle_before[4]) >= float(candle_before[1])
+print(f"Красных свечей: {red}")
 
-if red == 5 and before_was_green:
-    send_telegram("🔴 ETH 15m: завершились 5 красных свечей подряд!")
-    print("Уведомление отправлено")
-else:
-    print(f"Красных свечей: {red}")
+if red == 5:
+    send_telegram("🔴 ETH 15m: завершились 5
