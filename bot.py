@@ -10,8 +10,12 @@ def send_telegram(text):
 def check_symbol(symbol):
     url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval=15&limit=7"
     
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=10, headers=headers)
         data = response.json()
         klines = data["result"]["list"]
     except Exception as e:
@@ -19,13 +23,10 @@ def check_symbol(symbol):
         send_telegram(f"❌ {symbol}: не удалось получить данные с Bybit")
         return
 
-    # Bybit отдаёт от новых к старым — разворачиваем
     klines = list(reversed(klines))
+    closed = klines[:-1]
+    last_5 = closed[-5:]
 
-    closed = klines[:-1]   # убираем текущую незакрытую свечу
-    last_5 = closed[-5:]   # последние 5 закрытых свечей
-
-    # Проверяем что ВСЕ 5 подряд красные
     all_red = all(float(k[4]) < float(k[1]) for k in last_5)
 
     info = []
