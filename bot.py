@@ -8,38 +8,36 @@ def send_telegram(text):
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
 def check_symbol(symbol):
-    urls = [
-        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
-        f"https://api1.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
-        f"https://api2.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
-    ]
-    klines = None
-    for url in urls:
-        try:
-            response = requests.get(url, timeout=10)
-            data = response.json()
-            if isinstance(data, list):
-                klines = data
-                break
-        except Exception as e:
-            print(f"Ошибка: {e}")
-
-    if klines is None:
-        print(f"Ne udalos poluchit dannye: {symbol}")
+    url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={symbol}&interval=15&limit=7"
+    
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        klines = data["result"]["list"]
+    except Exception as e:
+        print(f"Ошибка {symbol}: {e}")
+        send_telegram(f"❌ {symbol}: не удалось получить данные с Bybit")
         return
 
-    closed = klines[:-1]
-    last_5 = closed[-5:]
+    # Bybit отдаёт от новых к старым — разворачиваем
+    klines = list(reversed(klines))
 
-    red = 0
+    closed = klines[:-1]   # убираем текущую незакрытую свечу
+    last_5 = closed[-5:]   # последние 5 закрытых свечей
+
+    # Проверяем что ВСЕ 5 подряд красные
+    all_red = all(float(k[4]) < float(k[1]) for k in last_5)
+
+    info = []
     for k in last_5:
-        if float(k[4]) < float(k[1]):
-            red += 1
+        color = "🔴" if float(k[4]) < float(k[1]) else "🟢"
+        info.append(color)
 
-    print(f"{symbol} - Krasnych svechey: {red}")
+    candles_str = " ".join(info)
+    print(f"{symbol}: {candles_str} | Все красные: {all_red}")
 
-    if red == 5:
-        send_telegram(f"{symbol} 15m: 5 krasnych svechey podryad!")
+    if all_red:
+        send_telegram(f"🚨 {symbol} 15m: 5 красных свечей подряд!\n{candles_str}\nВремя входить в Лонг!")
 
-check_symbol("ETHUSDT")
 check_symbol("BTCUSDT")
+check_symbol("ETHUSDT")
