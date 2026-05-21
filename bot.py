@@ -27,7 +27,7 @@ for url in urls:
         print(f"Ошибка: {e}")
 
 if klines is None:
-    print("Не удалось получить данные с Binance")
+    print("Ne udalos poluchit dannye s Binance")
     exit()
 
 closed = klines[:-1]
@@ -38,7 +38,8 @@ for k in last_5:
     if float(k[4]) < float(k[1]):
         red += 1
 
-print(f"Красных свечей: {red}")
+print(f"Krasnych svechey: {red}")
 
 if red == 5:
-    send_telegram("🔴 ETH 15m: завершились 5
+    send_telegram("ETH 15m: 5 krasnych svechey podryad!")
+    print("Uvedomlenie otpravleno")
