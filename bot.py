@@ -3,35 +3,37 @@ import requests
 TELEGRAM_TOKEN = "8857597899:AAGALX8vOUNl_sNQyOazFdjrPHBJ8QAzQDs"
 CHAT_ID = "1152105552"
 
-SYMBOLS = ["ETHUSDT", "BTCUSDT"]  # добавьте нужные пары
+SYMBOLS = ["ETHUSDT", "BTCUSDT"]
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
-def check_symbol(symbol):
+def get_klines(symbol):
     urls = [
+        f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
         f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
-        f"https://api1.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
-        f"https://api2.binance.com/api/v3/klines?symbol={symbol}&interval=15m&limit=7",
     ]
-    klines = None
     for url in urls:
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
             data = response.json()
-            if isinstance(data, list):
-                klines = data
-                break
+            if isinstance(data, list) and len(data) > 0:
+                print(f"✅ {symbol}: данные получены")
+                return data
         except Exception as e:
-            print(f"Ошибка: {e}")
+            print(f"Ошибка {url}: {e}")
+    return None
+
+def check_symbol(symbol):
+    klines = get_klines(symbol)
 
     if klines is None:
-        send_telegram(f"❌ {symbol}: не удалось получить данные с Binance")
+        send_telegram(f"❌ {symbol}: не удалось получить данные")
         return
 
-    closed = klines[:-1]  # все закрытые свечи
-    last_5 = closed[-5:]  # последние 5
+    closed = klines[:-1]   # убираем текущую незакрытую свечу
+    last_5 = closed[-5:]   # последние 5 закрытых
 
     all_red = all(float(k[4]) < float(k[1]) for k in last_5)
 
@@ -41,11 +43,10 @@ def check_symbol(symbol):
         info.append(color)
     candles_str = " ".join(info)
 
+    print(f"{symbol}: {candles_str}")
+
     if all_red:
         send_telegram(f"🚨 {symbol}: 5 красных свечей подряд!\n{candles_str}")
-        print(f"Сигнал отправлен: {symbol}")
-    else:
-        print(f"{symbol}: сигнала нет — {candles_str}")
 
 # Запуск
 for symbol in SYMBOLS:
