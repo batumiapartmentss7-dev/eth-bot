@@ -3,7 +3,7 @@ import requests
 TELEGRAM_TOKEN = "8857597899:AAGALX8vOUNl_sNQyOazFdjrPHBJ8QAzQDs"
 CHAT_ID = "1152105552"
 
-SYMBOLS = ["ETHUSDT", "BTCUSDT"]
+SYMBOLS = ["ETHUSDT"]
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -27,15 +27,12 @@ def get_klines(symbol):
 
 def check_symbol(symbol):
     klines = get_klines(symbol)
-
     if klines is None:
         send_telegram(f"❌ {symbol}: не удалось получить данные")
         return
 
     closed = klines[:-1]   # убираем текущую незакрытую свечу
-    last_5 = closed[-5:]   # последние 5 закрытых
-
-    all_red = all(float(k[4]) < float(k[1]) for k in last_5)
+    last_5 = closed[-5:]   # строго последние 5 закрытых
 
     info = []
     for k in last_5:
@@ -45,9 +42,11 @@ def check_symbol(symbol):
 
     print(f"{symbol}: {candles_str}")
 
-    if all_red:
-        send_telegram(f"🚨 {symbol}: 5 красных свечей подряд!\n{candles_str}")
+    # Все 5 последних закрытых свечей красные?
+    all_red = all(float(k[4]) < float(k[1]) for k in last_5)
 
-# Запуск
+    if all_red:
+        send_telegram(f"🚨 ETHUSDT: 5 красных свечей по 15 минут!\n{candles_str}")
+
 for symbol in SYMBOLS:
     check_symbol(symbol)
